@@ -1,0 +1,4 @@
+jdk:
+  - openjdk17
+install:
+  - bash ./gradlew --no-daemon clean build publishToMavenLocal -Pgroup="$GROUP" -PartifactId="$ARTIFACT" -Pversion="$VERSION"

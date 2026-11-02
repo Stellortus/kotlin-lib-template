@@ -1,6 +1,25 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
+import { fileURLToPath } from 'node:url';
 import { buildOnJitPack, createRelease, validateVersion } from './release.mjs';
+
+const projectRoot = fileURLToPath(new URL('../../', import.meta.url));
+
+test('Gradle Wrapper is executable in Git', () => {
+  const entry = execFileSync('git', ['ls-files', '--stage', '--', 'gradlew'], {
+    cwd: projectRoot, encoding: 'utf8',
+  });
+  assert.match(entry, /^100755 [a-f0-9]+ 0\tgradlew\r?\n$/,
+    'Run git update-index --chmod=+x gradlew and commit the mode change');
+});
+
+test('Gradle Wrapper uses LF line endings', () => {
+  const wrapper = readFileSync(new URL('../../gradlew', import.meta.url), 'utf8');
+  assert.ok(wrapper.startsWith('#!/bin/sh\n'), 'The shebang must end with LF');
+  assert.ok(!wrapper.includes('\r'), 'gradlew must not contain CRLF line endings');
+});
 
 const version = [2, 3, 4].join('.');
 const sha = 'a'.repeat(40);

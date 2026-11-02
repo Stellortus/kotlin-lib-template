@@ -34,6 +34,8 @@ JitPack 会从标签拉取源码构建，发布坐标为 `com.github.<仓库所�
 
 若 JitPack 暂时不可用，工作流最多尝试 8 次，每次请求最多等待 90 秒，间隔 15 秒。失败时 GitHub Release 保留；在 Actions 页面选择 **Re-run failed jobs** 即可重试。构建日志位于 `https://jitpack.io/com/github/<仓库所有者>/<仓库名>/<版本>/build.log`。
 
+若失败原因是源码或构建配置有误，需要修复代码并提升 `gradle.properties` 中的版本，再提交并 push。已有标签仍指向旧提交；重跑旧工作流不会加载新的修复，不要移动已有发布标签。
+
 ## 在其他项目中引用
 
 将占位符替换为新仓库的信息，版本号与 Release 标签完全相同。
@@ -63,11 +65,19 @@ Windows：
 Linux / macOS：
 
 ```shell
-bash ./gradlew -q printVersion
-bash ./gradlew build publishToMavenLocal -Dmaven.repo.local="$PWD/build/verification-repository"
+./gradlew -q printVersion
+./gradlew build publishToMavenLocal -Dmaven.repo.local="$PWD/build/verification-repository"
 ```
 
-主 JAR 与源码 JAR 位于 `build/libs`，验证用 Maven 产物位于 `build/verification-repository`。CI 和 JitPack 显式通过 `bash` 运行 Wrapper，无需 Windows 用户额外设置可执行位。
+主 JAR 与源码 JAR 位于 `build/libs`，验证用 Maven 产物位于 `build/verification-repository`。
+
+Git 中的 `gradlew` 应保存为可执行文件（模式 `100755`），`.gitattributes` 固定其使用 LF 换行。CI 和 JitPack 也会在构建前执行 `chmod +x gradlew`。如果 Windows 下重新生成 Wrapper 后丢失 Git 可执行位，提交前执行：
+
+```shell
+git update-index --chmod=+x gradlew
+```
+
+使用 `git ls-files --stage gradlew` 确认模式为 `100755`，并将权限变更随代码一起提交。仅在本机执行 `chmod` 无法保证 Windows Git 会记录此变更。
 
 发布自动化测试使用 Node.js 22 或更新版本，无需安装 npm 依赖，也不会调用真实的发布接口：
 
